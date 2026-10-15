@@ -506,7 +506,7 @@ function seatHTML(id,m){
   var label=seatLabel(id);
   var title=m?(m.rank+' '+full(m)+(m.notes?' — '+m.notes:'')):('Seat '+label+' is empty');
   return '<div role="button" tabindex="0" class="'+cls+'" data-seat="'+id+'" '+(m?'draggable="true" ':'')+'title="'+esc(title)+'" aria-label="'+esc('Seat '+label+': '+(m?m.rank+' '+full(m):'empty'))+'">'+
-    '<span class="code"><span>'+esc(label)+(m?' <small class="rk">'+esc(m.rank)+'</small>':'')+'</span>'+(m?dz(m):'')+'</span>'+
+    '<span class="code"><span>'+((m&&!OFFICE[id])?'':esc(label)+(m?' ':''))+(m?'<small class="rk">'+esc(m.rank)+'</small>':'')+'</span>'+(m?dz(m):'')+'</span>'+
     (m?'<span class="who">'+esc(full(m))+'</span>':'<span class="who">Empty</span>')+'</div>'}
 
 function renderPlan(){
