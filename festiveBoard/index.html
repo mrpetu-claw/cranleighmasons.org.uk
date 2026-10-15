@@ -87,7 +87,9 @@ h1{font-family:var(--display);font-size:clamp(28px,4.6vw,40px);line-height:1.1;m
 /* ---------- seating ---------- */
 .seating{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
 .plan-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px 16px 24px}
-.plan-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;margin:0 4px 16px}
+.plan-head{display:grid;grid-template-columns:auto 1fr auto;gap:8px 16px;align-items:center;margin:0 4px 16px}
+.plan-head .headmid{text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center}
+.crest{width:clamp(52px,9vw,84px);aspect-ratio:256/248;background:var(--blue);-webkit-mask:url(crest.png) center/contain no-repeat;mask:url(crest.png) center/contain no-repeat}
 .plan-head h2{font-family:var(--display);font-size:15px;letter-spacing:.14em;text-transform:uppercase;margin:0;font-weight:600}
 .plan-head .count{font-size:13px;color:var(--ink-2)}
 .plan-scroll{overflow-x:auto;padding-bottom:6px}
@@ -487,7 +489,7 @@ function buildSeating(){
   $('#view').innerHTML=
    '<div class="seating">'+
    '<section class="plan-card" aria-label="Seating plan">'+
-     '<div class="plan-head"><h2>Seating plan</h2><span class="count tnum" id="planCount"></span></div>'+
+     '<div class="plan-head"><div class="crest" role="img" aria-label="Cranleigh Lodge No. 3445 crest"></div><div class="headmid"><h2>Seating plan</h2><span class="count tnum" id="planCount"></span></div><div class="crest" role="img" aria-label="Cranleigh Lodge No. 3445 crest"></div></div>'+
      '<div class="plan-scroll"><div id="plan"></div></div>'+
    '</section>'+
    '<aside class="panel" id="panel" aria-label="Seat assignment">'+
