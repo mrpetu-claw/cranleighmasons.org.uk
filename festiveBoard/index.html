@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Festive Board Map</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap">
+<script>try{var t=localStorage.getItem("festiveBoardTheme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <style>
 /* Layout: sticky tab bar over four views. Seating view = wide U-shaped plan (top table + Senior/Junior Warden columns)
    plus two small tables, with a side panel listing diners still to be seated. */
@@ -232,6 +233,7 @@ textarea.summary{width:100%;min-height:190px;background:var(--bg);border:1px sol
     <div class="meta">
       <label class="date" for="boardDate">Date <input type="date" id="boardDate"></label>
       <span class="conn" id="conn"><i></i><span>Connecting…</span></span>
+      <button class="btn small" data-act="theme" id="themeBtn" type="button" aria-label="Colour theme">Theme: Auto</button>
       <button class="btn small" data-act="disconnect" id="disc" hidden>Disconnect</button>
     </div>
   </header>
@@ -717,6 +719,11 @@ function renderHistory(){
   $('#view').innerHTML='<div class="hist"><div>'+left+'</div><div>'+right+'</div></div>';
   if(keep!==null&&$('#hLabel')){$('#hLabel').value=keep;$('#hLabel').focus()}}
 
+function themeLabel(){
+  var t=document.documentElement.getAttribute('data-theme')||'auto',b=$('#themeBtn');
+  if(b)b.textContent='Theme: '+(t==='auto'?'Auto':t==='light'?'Light':'Dark')}
+themeLabel();
+
 /* ---------- toast ---------- */
 var toastTimer=null;
 function toast(msg,withUndo){
@@ -748,6 +755,11 @@ document.addEventListener('click',function(e){
   var act=a.dataset.act,id=a.dataset.id;
   if(act==='tab')setTab(a.dataset.tab);
   else if(act==='disconnect'){try{localStorage.removeItem('festiveBoardToken')}catch(x){}TOKEN='';remote=null;S.members=[];S.history=[];S.histSel=null;S.board={date:'',seats:{}};S.conn='off';refresh();openSetup('')}
+  else if(act==='theme'){
+    var cur=document.documentElement.getAttribute('data-theme')||'auto',nx=cur==='auto'?'light':cur==='light'?'dark':'auto';
+    if(nx==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',nx);
+    try{if(nx==='auto')localStorage.removeItem('festiveBoardTheme');else localStorage.setItem('festiveBoardTheme',nx)}catch(x){}
+    themeLabel()}
   else if(act==='cancel'){S.seatSel=null;S.armed=null;S.moveFrom=null;refresh()}
   else if(act==='unseat'&&S.seatSel)unseat(S.seatSel);
   else if(act==='move'&&S.seatSel){S.moveFrom=S.seatSel;S.seatSel=null;refresh()}
