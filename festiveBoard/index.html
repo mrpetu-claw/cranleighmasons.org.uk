@@ -214,6 +214,33 @@ textarea.summary{width:100%;min-height:190px;background:var(--bg);border:1px sol
   .filters input[type=search]{grid-column:1/-1}
   .stat b{font-size:20px}
 }
+/* print: A4 landscape, seating plan only, always light */
+.pr-only{display:none}
+@page{size:A4 landscape;margin:9mm}
+@media print{
+  :root:root:root{
+    --bg:#fff; --surface:#fff; --surface-2:#eef1f6; --cloth:#f3f5fa; --ink:#14203a; --ink-2:#4b5974; --line:#c5cddc; --line-2:#8f9bb4;
+    --blue:#1f3a78; --brass:#8a5d0f; --brass-bg:#f4e8cb; --brass-line:#c9a45a;
+    --c-cheese:#8f5a00; --c-cheese-bg:#f6e4b8; --c-pud:#9b2d63; --c-pud-bg:#f5d7e6; --c-fruit:#23704a; --c-fruit-bg:#d2eddb;
+    --shadow:none; color-scheme:light}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{background:#fff!important}
+  body{padding:0;font-size:13px}
+  .top,.stats,.tabs,.panel,#toastHost,.gate,.noprint{display:none!important}
+  .pr-only{display:block}
+  .seating{display:block}
+  .plan-card{border:0;box-shadow:none;padding:0;break-inside:avoid}
+  .plan-head{margin:0 0 6px}
+  .crest{width:70px}
+  .plan-head h2{font-size:18px}
+  .plan-head .count{display:none}
+  .pr-only{font-size:13px;color:var(--ink-2)}
+  .plan-scroll{overflow:visible;padding:0}
+  #plan{display:flex;align-items:flex-start;justify-content:center;gap:26px;zoom:.78}
+  #plan .u{min-width:0;flex:none;width:900px;margin:0}
+  #plan .smalls{flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;margin:0;padding:62px 0 0 26px;border-top:0;border-left:1px dashed var(--line-2);gap:30px}
+  .seat{box-shadow:none}
+}
 @media (prefers-reduced-motion:no-preference){
   .seat{transition:background .12s,border-color .12s}
 }
@@ -489,7 +516,7 @@ function buildSeating(){
   $('#view').innerHTML=
    '<div class="seating">'+
    '<section class="plan-card" aria-label="Seating plan">'+
-     '<div class="plan-head"><div class="crest" role="img" aria-label="Cranleigh Lodge No. 3445 crest"></div><div class="headmid"><h2>Seating plan</h2><span class="count tnum" id="planCount"></span></div><div class="crest" role="img" aria-label="Cranleigh Lodge No. 3445 crest"></div></div>'+
+     '<div class="plan-head"><div class="crest" role="img" aria-label="Cranleigh Lodge No. 3445 crest"></div><div class="headmid"><h2>Seating plan</h2><div class="pr-only" id="printTitle"></div><span class="count tnum" id="planCount"></span><button class="btn small noprint" data-act="print" type="button">Print plan (A4)</button></div><div class="crest" role="img" aria-label="Cranleigh Lodge No. 3445 crest"></div></div>'+
      '<div class="plan-scroll"><div id="plan"></div></div>'+
    '</section>'+
    '<aside class="panel" id="panel" aria-label="Seat assignment">'+
@@ -513,7 +540,8 @@ function renderPlan(){
   var map=seatMap();
   $('#plan').innerHTML=planHTML(map);
   var seated=Object.keys(validSeats()).length,dining=S.members.filter(function(m){return m.dining}).length;
-  $('#planCount').textContent=seated+' seated · '+(dining-seated)+' to place · '+CAPACITY+' seats'}
+  $('#planCount').textContent=seated+' seated · '+(dining-seated)+' to place · '+CAPACITY+' seats';
+  var pt=$('#printTitle');if(pt)pt.textContent='Cranleigh Lodge No. 3445 · Festive Board'+(S.board.date?' · '+fmtDate(S.board.date):'')}
 function planHTML(map){
   function s(id){return seatHTML(id,map[id])}
   function cell(col,row,id){return '<div class="cell" style="grid-column:'+col+';grid-row:'+row+'">'+s(id)+'</div>'}
@@ -757,6 +785,7 @@ document.addEventListener('click',function(e){
   var act=a.dataset.act,id=a.dataset.id;
   if(act==='tab')setTab(a.dataset.tab);
   else if(act==='disconnect'){try{localStorage.removeItem('festiveBoardToken')}catch(x){}TOKEN='';remote=null;S.members=[];S.history=[];S.histSel=null;S.board={date:'',seats:{}};S.conn='off';refresh();openSetup('')}
+  else if(act==='print'){window.print()}
   else if(act==='theme'){
     var cur=document.documentElement.getAttribute('data-theme')||'auto',nx=cur==='auto'?'light':cur==='light'?'dark':'auto';
     if(nx==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',nx);
