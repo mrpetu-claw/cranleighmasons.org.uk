@@ -3,7 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cranleigh Lodge No.3445</title>
+<title>Cranleigh Lodge No.3445 – Freemasons in Cranleigh, Surrey</title>
+<meta name="description" content="Cranleigh Lodge No. 3445, Province of Surrey, has met in Cranleigh since 1910. Find out what Freemasonry is, what the lodge does for the community, and how to get in touch about joining.">
+<meta property="og:title" content="Cranleigh Lodge No.3445 – Freemasons in Cranleigh, Surrey">
+<meta property="og:description" content="Cranleigh Lodge No. 3445, Province of Surrey. Learn about Freemasonry and how to enquire about joining.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://mrpetu-claw.github.ioimages/Cranleigh-Lodge.gif">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -84,7 +89,7 @@
   }
   .home-hero::after {
     content: ''; position: absolute; inset: 0;
-    background: url('/cranleighmasons.org.uk/images/stone-G.png') center/280px no-repeat;
+    background: url('images/stone-G.png') center/280px no-repeat;
     opacity: 0.04; pointer-events: none;
   }
   .hero-tag { font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-light); margin-bottom: 1.8rem; opacity: 0.9; }
@@ -230,15 +235,15 @@
 <!-- NAV -->
 <nav>
   <div class="nav-logo" onclick="showPage('home')">
-    <img src="/cranleighmasons.org.uk/images/logo.png" alt="Cranleigh Lodge">
+    <img src="images/logo.png" alt="Cranleigh Lodge">
   </div>
   <ul class="nav-links">
-    <li><a onclick="showPage('home')" data-page="home">Home</a></li>
-    <li><a onclick="showPage('freemasonry')" data-page="freemasonry">Freemasonry</a></li>
-    <li><a onclick="showPage('lodge')" data-page="lodge">Cranleigh Lodge</a></li>
-    <li><a onclick="showPage('faqs')" data-page="faqs">FAQs</a></li>
+    <li><a href="#/home" data-page="home">Home</a></li>
+    <li><a href="#/freemasonry" data-page="freemasonry">Freemasonry</a></li>
+    <li><a href="#/lodge" data-page="lodge">Cranleigh Lodge</a></li>
+    <li><a href="#/faqs" data-page="faqs">FAQs</a></li>
   
-   <li><a href="https://mrpetu-claw.github.io/cranleighmasons.org.uk/festiveBoard/index.html">Festive Board</a></li>
+   <li><a href="festiveBoard/">Festive Board</a></li>
   </ul>
   <button class="nav-cta" onclick="showPage('contact')">Contact Us</button>
   <button class="nav-burger" onclick="toggleMenu()" aria-label="Menu">
@@ -248,11 +253,11 @@
 
 <!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobileMenu">
-  <a onclick="showPage('home');toggleMenu()">Home</a>
-  <a onclick="showPage('freemasonry');toggleMenu()">Freemasonry</a>
-  <a onclick="showPage('lodge');toggleMenu()">Cranleigh Lodge</a>
-  <a onclick="showPage('faqs');toggleMenu()">FAQs</a>
-  <a onclick="showPage('contact');toggleMenu()">Contact Us</a>
+  <a href="#/home" onclick="toggleMenu()">Home</a>
+  <a href="#/freemasonry" onclick="toggleMenu()">Freemasonry</a>
+  <a href="#/lodge" onclick="toggleMenu()">Cranleigh Lodge</a>
+  <a href="#/faqs" onclick="toggleMenu()">FAQs</a>
+  <a href="#/contact" onclick="toggleMenu()">Contact Us</a>
 </div>
 
 <!-- ══════════════ HOME PAGE ══════════════ -->
@@ -260,14 +265,14 @@
 
   <section class="home-hero">
     <div class="hero-tag">Province of Surrey · Lodge No. 3445</div>
-    <div class="hero-logo"><img src="/cranleighmasons.org.uk/images/logo.png" alt="Cranleigh Lodge Logo"></div>
+    <div class="hero-logo"><img src="images/logo.png" alt="Cranleigh Lodge Logo"></div>
     <h1>Welcome to<br>Cranleigh Lodge</h1>
-    <div class="hero-crest"><img src="/cranleighmasons.org.uk/images/Cranleigh-Lodge.gif" alt="Cranleigh Lodge Crest"></div>
+    <div class="hero-crest"><img src="images/Cranleigh-Lodge.gif" alt="Cranleigh Lodge Crest"></div>
     <p class="hero-motto">Festina Lente</p>
     <p class="hero-motto-en">'Make Haste Slowly' · No. 3445</p>
     <div class="hero-affiliates">
-      <a href="https://www.ugle.org.uk/" target="_blank"><img src="/cranleighmasons.org.uk/images/UGLE.png" alt="UGLE"></a>
-      <a href="https://surreyfreemasons.org.uk/" target="_blank"><img src="/cranleighmasons.org.uk/images/Provincial-Grand-Lodge-of-Surrey.png" alt="Provincial Grand Lodge of Surrey"></a>
+      <a href="https://www.ugle.org.uk/" target="_blank"><img src="images/UGLE.png" alt="UGLE"></a>
+      <a href="https://surreyfreemasons.org.uk/" target="_blank"><img src="images/Provincial-Grand-Lodge-of-Surrey.png" alt="Provincial Grand Lodge of Surrey"></a>
     </div>
     <div class="hero-btns">
       <button class="btn-gold" onclick="showPage('freemasonry')">Discover Freemasonry</button>
@@ -282,7 +287,7 @@
     <h2 class="section-title reveal">A Moral Code. A Study in the Art of Life.</h2>
     <p class="prose reveal">Our goal is to provide a positive insight into what Freemasonry has to offer. Within these pages you will find out about Freemasonry in general, about Cranleigh Freemasons and the Province of Surrey.</p>
     <p class="prose reveal">Freemasonry may be summed up in the following manner: a moral code; a study in the art of life; a way of life.</p>
-    <div class="stone-g reveal"><img src="/cranleighmasons.org.uk/images/stone-G.png" alt="Masonic G Symbol"></div>
+    <div class="stone-g reveal"><img src="images/stone-G.png" alt="Masonic G Symbol"></div>
   </section>
 
   <div class="gold-divider"></div>
@@ -401,12 +406,12 @@
         <p class="prose">Cranleigh Lodge No.3445 is a Masonic lodge situated in the heart of Surrey, working under the United Grand Lodge of England and the Provincial Grand Lodge of Surrey.</p>
         <p class="prose">Our motto, <em>Festina Lente</em> — 'Make Haste Slowly' — reflects a philosophy of measured progress, integrity, and enduring brotherhood.</p>
         <div class="affil-row">
-          <a href="https://www.ugle.org.uk/" target="_blank"><img src="/cranleighmasons.org.uk/images/UGLE.png" alt="UGLE"></a>
-          <a href="https://surreyfreemasons.org.uk/" target="_blank"><img src="/cranleighmasons.org.uk/images/Provincial-Grand-Lodge-of-Surrey.png" alt="Surrey Freemasons"></a>
+          <a href="https://www.ugle.org.uk/" target="_blank"><img src="images/UGLE.png" alt="UGLE"></a>
+          <a href="https://surreyfreemasons.org.uk/" target="_blank"><img src="images/Provincial-Grand-Lodge-of-Surrey.png" alt="Surrey Freemasons"></a>
         </div>
       </div>
       <div style="text-align:center">
-        <img src="/cranleighmasons.org.uk/images/Cranleigh-Lodge.gif" alt="Cranleigh Lodge Crest" style="max-width:220px;width:100%;">
+        <img src="images/Cranleigh-Lodge.gif" alt="Cranleigh Lodge Crest" style="max-width:220px;width:100%;">
         <p style="font-size:0.8rem;color:var(--muted);margin-top:1rem;letter-spacing:0.05em;font-style:italic;">Lodge No. 3445</p>
       </div>
     </div>
@@ -417,7 +422,7 @@
       <div class="eyebrow">Heritage</div>
       <h2 class="section-title">A Brief History of the Cranleigh Lodge No 3445</h2>
       
-      <p class="prose">Currently the Cranleigh Lodge has some 48 members and celebrated it’s Centenary in November 2010. The Lodge can look back on a very successful past; it has been and remains a significant force for good in the community. It has supported many local organisations including Cranleigh Scouts, the Village Hospital, Citizens Advice, CHASE, GUTS, and more recently The Surrey/Sussex Air Ambulance.</p>
+      <p class="prose">Currently the Cranleigh Lodge has some 48 members and celebrated its Centenary in November 2010. The Lodge can look back on a very successful past; it has been and remains a significant force for good in the community. It has supported many local organisations including Cranleigh Scouts, the Village Hospital, Citizens Advice, CHASE, GUTS, and more recently The Surrey/Sussex Air Ambulance.</p>
 
       <!-- 1910's SECTION -->
       <div style="margin: 3rem 0;">
@@ -425,10 +430,10 @@
         <div style="display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-start;">
           <div style="flex: 1; min-width: 300px;">
             <p class="prose">The history begins in 1910 when it was consecrated in the old Village Hall which was its first home. The old Village Hall was situated on the Ewhurst Road and is not to be confused with the current Village Hall which was built in 1933. A very distinguished Church of England clergyman helped to consecrate the Lodge: the Rev Canon Herbert William Turner M.A. The Provincial Grand Master led the Dedication team, The Hon Sir Thomas Bucknill M.P.</p>
-            <p class="prose">The first Worshipful Master was W. Bro. Frank Gustavus Naumann, a wealthy local merchant. Two early tragedies beset the Lodge: the Secretary, Fred Hallows died in 1912 and on the 7th May 1915 the British transatlantic passenger liner Lusitania was torpedoed by a German submarine, taking the life of W. Bro. Frank Neumann.</p>
+            <p class="prose">The first Worshipful Master was W. Bro. Frank Gustavus Naumann, a wealthy local merchant. Two early tragedies beset the Lodge: the Secretary, Fred Hallows died in 1912 and on the 7th May 1915 the British transatlantic passenger liner Lusitania was torpedoed by a German submarine, taking the life of W. Bro. Frank Naumann.</p>
           </div>
           <div style="flex: 0 0 300px;">
-            <img src="/cranleighmasons.org.uk/images/old-building.png" alt="The Old Village Hall 1910" style="width:100%; border-radius:4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <img src="images/old-building.png" alt="The Old Village Hall 1910" style="width:100%; border-radius:4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
           </div>
         </div>
       </div>
@@ -438,7 +443,7 @@
         <h3 style="color:var(--gold); font-size:1.2rem; margin-bottom:1.5rem; text-transform:uppercase; letter-spacing:0.1em;">1950's</h3>
         <div style="display: flex; gap: 2rem; flex-wrap: wrap-reverse; align-items: flex-start;">
           <div style="flex: 0 0 300px;">
-            <img src="/cranleighmasons.org.uk/images/lodge-building.jpg" alt="Cranleigh Masonic Hall" style="width:100%; border-radius:4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <img src="images/lodge-building.jpg" alt="Cranleigh Masonic Hall" style="width:100%; border-radius:4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
           </div>
           <div style="flex: 1; min-width: 300px;">
             <p class="prose">In 1953, the Lodge sold the Masonic Hall to the British Legion for £5000 but continued to rent the Hall for £100 per annum. The Lodge and the Legion had reversed roles!</p>
@@ -456,7 +461,7 @@
             <p class="prose">In 1985 the Lodge decided to retire its existing Banner, gifted to it in 1911. A new Banner was dedicated by the Deputy Provincial Grand Master W. Bro. P. A. Toler on 9th April 1986.</p>
           </div>
           <div style="flex: 0 0 300px;">
-            <img src="/cranleighmasons.org.uk/images/lodge-banner.jpg" alt="Cranleigh Lodge Banner" style="width:100%; border-radius:4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <img src="images/lodge-banner.jpg" alt="Cranleigh Lodge Banner" style="width:100%; border-radius:4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
           </div>
         </div>
       </div>
@@ -501,7 +506,7 @@
     </div>
 
     <div style="text-align:center;margin-top:4rem;opacity:0.4">
-      <img src="/cranleighmasons.org.uk/images/stone-G.png" alt="Masonic Symbol" style="max-width:80px;">
+      <img src="images/stone-G.png" alt="Masonic Symbol" style="max-width:80px;">
     </div>
 
   </div>
@@ -523,12 +528,12 @@
     <div class="contact-info">
       <div class="eyebrow">Reach Out</div>
       <h2>Let's Get in Touch</h2>
-      <p>For more information on the Cranleigh Masons and joining the Cranleigh Masonic Lodge, please contact us. We welcome enquiries from any man who is curious about what Freemasonry has to offer.</p>
+      <p>For more information on Cranleigh Lodge and joining us, please contact us. We welcome enquiries from any man who is curious about what Freemasonry has to offer.</p>
       <p>You can reach us directly by email:</p>
       <a href="mailto:info@cranleighmasons.org.uk" class="contact-email">✉ info@cranleighmasons.org.uk</a>
       <div class="contact-affiliates">
-        <a href="https://www.ugle.org.uk/" target="_blank"><img src="/cranleighmasons.org.uk/images/UGLE.png" alt="UGLE"></a>
-        <a href="https://surreyfreemasons.org.uk/" target="_blank"><img src="/cranleighmasons.org.uk/images/Provincial-Grand-Lodge-of-Surrey.png" alt="Surrey Freemasons"></a>
+        <a href="https://www.ugle.org.uk/" target="_blank"><img src="images/UGLE.png" alt="UGLE"></a>
+        <a href="https://surreyfreemasons.org.uk/" target="_blank"><img src="images/Provincial-Grand-Lodge-of-Surrey.png" alt="Surrey Freemasons"></a>
       </div>
     </div>
 
@@ -554,7 +559,7 @@
         <button class="form-submit" onclick="submitForm()">Send Enquiry</button>
       </div>
       <div class="success-msg" id="successMsg">
-        <img src="/cranleighmasons.org.uk/images/tick.png" alt="Sent" style="height:48px;margin-bottom:1rem;opacity:0.8">
+        <img src="images/tick.png" alt="Sent" style="height:48px;margin-bottom:1rem;opacity:0.8">
         <h3>Thank You!</h3>
         <p>Your details have been successfully submitted. We'll be in touch shortly.</p>
         <button class="btn-navy" style="margin-top:1.5rem" onclick="resetForm()">Send Another</button>
@@ -598,16 +603,16 @@
 <!-- FOOTER -->
 <footer>
   <div class="footer-logo" onclick="showPage('home')">
-    <img src="/cranleighmasons.org.uk/images/logo.png" alt="Cranleigh Lodge">
+    <img src="images/logo.png" alt="Cranleigh Lodge">
   </div>
   <ul class="footer-links">
-    <li><a onclick="showPage('home')">Home</a></li>
-    <li><a onclick="showPage('freemasonry')">Freemasonry</a></li>
-    <li><a onclick="showPage('lodge')">Cranleigh Lodge</a></li>
-    <li><a onclick="showPage('faqs')">FAQs</a></li>
-    <li><a onclick="showPage('contact')">Contact</a></li>
+    <li><a href="#/home">Home</a></li>
+    <li><a href="#/freemasonry">Freemasonry</a></li>
+    <li><a href="#/lodge">Cranleigh Lodge</a></li>
+    <li><a href="#/faqs">FAQs</a></li>
+    <li><a href="#/contact">Contact</a></li>
   </ul>
-  <p class="footer-copy">© Copyright. Cranleigh Lodge No.3445. All rights reserved.</p>
+  <p class="footer-copy">© 2026 Cranleigh Lodge No.3445. All rights reserved.</p>
 </footer>
 
 <script>
@@ -676,7 +681,26 @@ function toggleFaq(i) {
 }
 
 // ── PAGE ROUTING ──
+const PAGE_TITLES = {
+  home: 'Cranleigh Lodge No.3445 – Freemasons in Cranleigh, Surrey',
+  freemasonry: 'Freemasonry – Cranleigh Lodge No.3445',
+  lodge: 'Our Lodge and History – Cranleigh Lodge No.3445',
+  faqs: 'FAQs – Cranleigh Lodge No.3445',
+  contact: 'Contact Us – Cranleigh Lodge No.3445'
+};
+// Each page has its own address (#/freemasonry etc.) so it can be linked, bookmarked and used with the Back button
 function showPage(id) {
+  if (location.hash !== '#/' + id) { location.hash = '#/' + id; return; }
+  renderPage(id);
+}
+function routeFromHash() {
+  const m = location.hash.match(/^#\/(\w+)/);
+  const id = m && document.getElementById('page-' + m[1]) ? m[1] : 'home';
+  renderPage(id);
+}
+window.addEventListener('hashchange', routeFromHash);
+function renderPage(id) {
+  document.title = PAGE_TITLES[id] || PAGE_TITLES.home;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   document.querySelectorAll('.nav-links a').forEach(a => {
@@ -724,7 +748,7 @@ function triggerReveals() {
   }, 50);
 }
 
-triggerReveals();
+routeFromHash();
 </script>
 </body>
 </html>
