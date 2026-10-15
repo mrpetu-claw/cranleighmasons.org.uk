@@ -221,6 +221,7 @@ textarea.summary{width:100%;min-height:190px;background:var(--bg);border:1px sol
     <div class="meta">
       <label class="date" for="boardDate">Date <input type="date" id="boardDate"></label>
       <span class="conn" id="conn"><i></i><span>Connecting…</span></span>
+      <button class="btn small" data-act="disconnect" id="disc" hidden>Disconnect</button>
     </div>
   </header>
   <div class="stats" id="stats" aria-live="polite"></div>
@@ -254,8 +255,10 @@ var GROUP_NAME={};GROUPS.forEach(function(g){GROUP_NAME[g[0]]=g[1]});
 var S={members:[],board:{date:'',seats:{}},boardExists:false,loaded:false,conn:'connecting',tab:'seating',
   seatSel:null,armed:null,moveFrom:null,trayQ:'',confirmClear:false,confirmDel:null,adding:false,
   filters:{q:'',group:'all',status:'all'},undo:null,memDirty:false};
-var API='api.php',KEY='',pending=0,version=0,chain=Promise.resolve();
-try{KEY=localStorage.getItem('festiveBoardKey')||''}catch(x){}
+/* The board's data is one JSON file (db.json) in a private GitHub repo, read and written through GitHub's API.
+   The repo name and access token are kept only in this browser. */
+var DEFAULT_REPO='mrpetu-claw/cranleigh-board-data',REPO=DEFAULT_REPO,TOKEN='',pending=0,remote=null,queue=[],flushing=false,flushTimer=null;
+try{REPO=localStorage.getItem('festiveBoardRepo')||DEFAULT_REPO;TOKEN=localStorage.getItem('festiveBoardToken')||''}catch(x){}
 
 /* ---------- helpers ---------- */
 function $(s,el){return (el||document).querySelector(s)}
@@ -279,25 +282,102 @@ function validSeats(){
 function seatMap(){var v=validSeats(),o={};Object.keys(v).forEach(function(k){o[k]=memberById(v[k])});return o}
 function seatOfMember(id){var v=validSeats();for(var k in v)if(v[k]===id)return k;return null}
 
-/* ---------- saving: every change is one request to api.php, applied in order ---------- */
-function request(method,url,body){
-  var hd={'Content-Type':'application/json'};if(KEY)hd['X-Board-Key']=KEY;
-  return fetch(url,{method:method,headers:hd,body:body?JSON.stringify(body):undefined,cache:'no-store',credentials:'same-origin'}).then(function(r){
-    if(r.status===401){var e=new Error('auth');e.auth=true;throw e}
+/* ---------- data layer: db.json in a private GitHub repo ---------- */
+var RANKS=['Bro','W Bro'],DESS=['','Cheese','Pud','Fruit'],RESP=['yes','no','blank'];
+function emptyDb(){return {version:0,board:{date:new Date().toISOString().slice(0,10),seats:{}},members:[]}}
+function cleanPatch(p){
+  var o={};
+  Object.keys(p||{}).forEach(function(k){
+    var v=p[k];
+    if(k==='surname'){v=String(v).trim().slice(0,60);if(v)o[k]=v}
+    else if(k==='first')o[k]=String(v).trim().slice(0,60);
+    else if(k==='notes')o[k]=String(v).trim().slice(0,300);
+    else if(k==='rank'){if(RANKS.indexOf(v)>-1)o[k]=v}
+    else if(k==='group'){if(GROUP_NAME[v])o[k]=v}
+    else if(k==='dessert'){if(DESS.indexOf(v)>-1)o[k]=v}
+    else if(k==='response'){if(RESP.indexOf(v)>-1)o[k]=v}
+    else if(k==='pdl'||k==='attending'||k==='dining')o[k]=!!v;
+    else if(k==='diet'){var d=[];(v||[]).forEach(function(x){x=String(x).trim().toUpperCase().slice(0,12);if(x&&d.indexOf(x)<0)d.push(x)});o[k]=d.slice(0,6)}});
+  return o}
+function dbFind(db,id){for(var i=0;i<db.members.length;i++)if(db.members[i].id===id)return i;return -1}
+function dbUnseat(db,id){Object.keys(db.board.seats).forEach(function(k){if(db.board.seats[k]===id)delete db.board.seats[k]})}
+function applyOp(db,op){
+  db.board=db.board||{date:'',seats:{}};db.board.seats=db.board.seats||{};db.members=db.members||[];
+  var i;
+  if(op.op==='member.add'){
+    var m=op.member||{},p=cleanPatch(m);
+    if(!/^m[a-z0-9]{3,20}$/.test(m.id||'')||dbFind(db,m.id)>-1||!p.surname)return;
+    db.members.push(Object.assign({id:m.id,surname:'',first:'',rank:'Bro',group:'regular',pdl:false,response:'blank',attending:false,dining:false,dessert:'',diet:[],notes:'',ord:db.members.length},p))}
+  else if(op.op==='member.update'){
+    i=dbFind(db,op.id);if(i<0)return;
+    var q=cleanPatch(op.patch);db.members[i]=Object.assign(db.members[i],q);
+    if(q.dining===false)dbUnseat(db,op.id)}
+  else if(op.op==='member.delete'){
+    i=dbFind(db,op.id);if(i>-1)db.members.splice(i,1);dbUnseat(db,op.id)}
+  else if(op.op==='board.update'){
+    if(/^\d{4}-\d{2}-\d{2}$/.test(op.date||''))db.board.date=op.date;
+    var seats=op.seats||{};
+    Object.keys(seats).forEach(function(seat){
+      if(!ALL[seat])return;
+      var id=seats[seat];
+      if(!id){delete db.board.seats[seat];return}
+      var j=dbFind(db,id);if(j<0||!db.members[j].dining)return;
+      dbUnseat(db,id);db.board.seats[seat]=id})}}
+
+function b64enc(str){var b=new TextEncoder().encode(str),s='';for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s)}
+function b64dec(t){var s=atob(String(t).replace(/\s/g,'')),b=new Uint8Array(s.length);for(var i=0;i<s.length;i++)b[i]=s.charCodeAt(i);return new TextDecoder().decode(b)}
+function ghHeaders(){return {'Accept':'application/vnd.github+json','Authorization':'Bearer '+TOKEN,'X-GitHub-Api-Version':'2022-11-28'}}
+function ghUrl(){return 'https://api.github.com/repos/'+REPO+'/contents/db.json'}
+function authErr(msg){var e=new Error(msg);e.auth=true;return e}
+/* read db.json; resolves {db,sha,etag}, {unchanged:true}, or a blank board when the file does not exist yet */
+function ghGet(useEtag){
+  var h=ghHeaders();if(useEtag&&remote&&remote.etag)h['If-None-Match']=remote.etag;
+  return fetch(ghUrl(),{headers:h,cache:'no-store'}).then(function(r){
+    if(r.status===304)return {unchanged:true};
+    if(r.status===401||r.status===403)throw authErr('GitHub did not accept that token.');
+    if(r.status===404){
+      return fetch('https://api.github.com/repos/'+REPO,{headers:ghHeaders(),cache:'no-store'}).then(function(r2){
+        if(r2.ok)return {db:emptyDb(),sha:null,etag:null};
+        throw authErr('Repository not found, or the token cannot see it.')})}
     if(!r.ok)throw new Error('http '+r.status);
-    return r.json()})}
-function adopt(r){
-  if(!r||r.unchanged||!r.members)return;
-  version=r.version;
-  S.members=r.members.map(function(m){return fixMember(m,m.id)});
-  S.board={date:r.board.date||'',seats:Object.assign({},r.board.seats||{})};
+    var etag=r.headers.get('ETag');
+    return r.json().then(function(j){
+      var db;try{db=JSON.parse(b64dec(j.content))}catch(x){throw new Error('db.json is not valid JSON')}
+      return {db:db,sha:j.sha,etag:etag}})})}
+function ghPut(db,sha,message){
+  var body={message:message,content:b64enc(JSON.stringify(db,null,1))};if(sha)body.sha=sha;
+  var h=ghHeaders();h['Content-Type']='application/json';
+  return fetch(ghUrl(),{method:'PUT',headers:h,body:JSON.stringify(body)}).then(function(r){
+    if(r.status===401||r.status===403)throw authErr('GitHub did not accept that token, or it cannot write to the repository.');
+    return r.json().catch(function(){return {}}).then(function(j){return {ok:r.ok,status:r.status,json:j}})})}
+
+function adoptDb(db){
+  S.members=(db.members||[]).map(function(m){return fixMember(m,m.id)});
+  S.board={date:(db.board&&db.board.date)||'',seats:Object.assign({},(db.board&&db.board.seats)||{})};
   S.loaded=true;S.conn='live';refresh()}
-function api(op){
-  pending++;
-  chain=chain.then(function(){return request('POST',API,op)}).then(function(r){pending--;S.conn='live';if(pending===0)adopt(r);else renderHeader()}).catch(function(e){
-    pending--;S.conn='off';renderHeader();
-    if(e&&e.auth)askKey();else toast('Could not save that change. Check your connection.')});
-  return chain}
+
+/* changes are queued, then committed together as one update to db.json (retrying if someone else saved first) */
+function api(op){pending++;queue.push(op);clearTimeout(flushTimer);flushTimer=setTimeout(flush,1200)}
+function flush(){
+  if(flushing||!queue.length)return;
+  flushing=true;
+  var ops=queue.splice(0,queue.length);
+  commit(ops,0).then(function(){
+    pending-=ops.length;flushing=false;S.conn='live';
+    if(queue.length)flush();else{renderHeader()}
+  }).catch(function(e){
+    pending-=ops.length;flushing=false;S.conn='off';remote=null;renderHeader();
+    if(e&&e.auth)openSetup(e.message);else toast('Could not save. Check your connection, then try again.');
+    if(queue.length)flush()})}
+function commit(ops,attempt){
+  return (remote?Promise.resolve(remote):ghGet().then(function(r){remote=r;return r})).then(function(r){
+    var db=JSON.parse(JSON.stringify(r.db));
+    ops.forEach(function(op){applyOp(db,op)});
+    db.version=(db.version||0)+1;
+    return ghPut(db,r.sha,'Festive Board update ('+ops.length+(ops.length>1?' changes)':' change)')).then(function(res){
+      if(res.ok){remote={db:db,sha:res.json.content.sha,etag:null};return}
+      if((res.status===409||res.status===422)&&attempt<4){remote=null;return commit(ops,attempt+1)}
+      throw new Error('save failed '+res.status)})})}
 function saveMember(id,patch){
   var m=memberById(id);if(!m)return;
   Object.keys(patch).forEach(function(k){m[k]=patch[k]});
@@ -364,7 +444,7 @@ function renderHeader(){
   var di=$('#boardDate');if(di&&document.activeElement!==di)di.value=S.board.date||'';
   var c=$('#conn');
   c.className='conn '+(S.conn==='live'?'live':S.conn==='off'?'off':'');
-  c.lastChild.textContent=S.conn==='live'?'Saved on the server':S.conn==='off'?'Cannot reach the server':'Connecting…';
+  c.lastChild.textContent=S.conn==='live'?'Saved to GitHub':S.conn==='off'?'Not connected':'Connecting…';
   document.querySelectorAll('.tab').forEach(function(t){t.setAttribute('aria-selected',t.dataset.tab===S.tab?'true':'false')})}
 
 /* ---------- seating view ---------- */
@@ -601,6 +681,7 @@ document.addEventListener('click',function(e){
   var a=e.target.closest('[data-act]');if(!a)return;
   var act=a.dataset.act,id=a.dataset.id;
   if(act==='tab')setTab(a.dataset.tab);
+  else if(act==='disconnect'){try{localStorage.removeItem('festiveBoardToken')}catch(x){}TOKEN='';remote=null;S.members=[];S.board={date:'',seats:{}};S.conn='off';refresh();openSetup('')}
   else if(act==='cancel'){S.seatSel=null;S.armed=null;S.moveFrom=null;refresh()}
   else if(act==='unseat'&&S.seatSel)unseat(S.seatSel);
   else if(act==='move'&&S.seatSel){S.moveFrom=S.seatSel;S.seatSel=null;refresh()}
@@ -703,24 +784,35 @@ function fixMember(d,id){
   var m=Object.assign({},d);m.id=id;m.diet=Array.isArray(m.diet)?m.diet:[];m.group=m.group||'regular';m.response=m.response||'blank';m.dessert=m.dessert||'';m.notes=m.notes||'';m.first=m.first||'';m.rank=m.rank||'Bro';
   return m}
 function load(){
-  return request('GET',API).then(function(r){adopt(r)}).catch(function(e){
+  return ghGet().then(function(r){remote=r;adoptDb(r.db);$('#disc').hidden=false}).catch(function(e){
     S.conn='off';S.loaded=true;refresh();
-    if(e&&e.auth)askKey()})}
-function askKey(){
-  if($('#gate'))return;
+    if(e&&e.auth)openSetup(e.message);else toast('Could not load the board. Check your connection.')})}
+function openSetup(msg){
+  var old=$('#gate');if(old){var er=$('#gateErr');if(er&&msg)er.textContent=msg;return}
   var g=document.createElement('div');g.className='gate';g.id='gate';
-  g.innerHTML='<form id="gateForm"><h2>Festive Board</h2><label for="gateKey" class="muted">Enter the board password to continue.</label><input type="password" id="gateKey" autocomplete="current-password"><div class="err" id="gateErr"></div><button class="btn primary" type="submit">Open</button></form>';
-  document.body.appendChild(g);$('#gateKey').focus();
+  g.innerHTML='<form id="gateForm"><h2>Festive Board</h2>'+
+    '<p class="muted" style="margin:0">The board is stored in a private GitHub repository. Enter its name and an access token with read and write access to that one repository. Both stay in this browser only.</p>'+
+    '<label for="gateRepo" class="muted">Repository (owner/name)</label><input id="gateRepo" autocomplete="off" spellcheck="false">'+
+    '<label for="gateKey" class="muted">Access token</label><input type="password" id="gateKey" autocomplete="off" spellcheck="false">'+
+    '<div class="err" id="gateErr"></div><button class="btn primary" type="submit">Connect</button>'+
+    '<a class="muted" style="font-size:13px" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a token on GitHub</a></form>';
+  document.body.appendChild(g);
+  $('#gateRepo').value=REPO;$('#gateErr').textContent=msg||'';$('#gateKey').focus();
   $('#gateForm').addEventListener('submit',function(e){
-    e.preventDefault();KEY=$('#gateKey').value;
-    request('GET',API).then(function(r){
-      try{localStorage.setItem('festiveBoardKey',KEY)}catch(x){}
-      g.remove();adopt(r)}).catch(function(){$('#gateErr').textContent='That password was not accepted.';$('#gateKey').select()})})}
+    e.preventDefault();
+    REPO=$('#gateRepo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\/+$/,'');TOKEN=$('#gateKey').value.trim();
+    $('#gateErr').textContent='Checking…';
+    ghGet().then(function(r){
+      try{localStorage.setItem('festiveBoardRepo',REPO);localStorage.setItem('festiveBoardToken',TOKEN)}catch(x){}
+      remote=r;g.remove();adoptDb(r.db);$('#disc').hidden=false
+    }).catch(function(err){$('#gateErr').textContent=(err&&err.message)||'Could not connect.'})})}
 function start(){
-  renderHeader();load();
+  renderHeader();
+  if(!TOKEN){S.conn='off';S.loaded=true;refresh();openSetup('');}
+  else load();
   setInterval(function(){
-    if(pending||document.hidden||drag)return;
-    request('GET',API+'?since='+version).then(adopt).catch(function(e){if(e&&e.auth)askKey();else{S.conn='off';renderHeader()}})},10000)}
+    if(!TOKEN||pending||queue.length||flushing||document.hidden||drag)return;
+    ghGet(true).then(function(r){if(r.unchanged)return;remote=r;adoptDb(r.db)}).catch(function(e){if(e&&e.auth)openSetup(e.message);else{S.conn='off';renderHeader()}})},15000)}
 start();
 })();
 </script>
