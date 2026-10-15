@@ -185,6 +185,17 @@ tr.grp td{background:var(--surface-2);font-family:var(--display);font-size:12px;
 .list .r{display:flex;gap:6px;align-items:center}
 textarea.summary{width:100%;min-height:190px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.hist{display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:20px;align-items:start}
+@media(max-width:860px){.hist{grid-template-columns:1fr}}
+.hlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.hitem{display:block;width:100%;text-align:left;font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.hitem:hover{border-color:var(--blue)}
+.hitem[aria-current="true"]{outline:2.5px solid var(--blue);outline-offset:1px}
+.hitem b{display:block;font-weight:600}
+.hitem small{color:var(--ink-2)}
+.hform{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.hform input{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.ro .seat{cursor:default}
 
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;z-index:50;box-shadow:var(--shadow);max-width:calc(100vw - 32px);font-size:14px}
 .toast button{background:none;border:0;color:inherit;text-decoration:underline;font-weight:700;padding:0}
@@ -230,6 +241,7 @@ textarea.summary{width:100%;min-height:190px;background:var(--bg);border:1px sol
     <button class="tab" role="tab" data-act="tab" data-tab="members">Members</button>
     <button class="tab" role="tab" data-act="tab" data-tab="dining">Dining list</button>
     <button class="tab" role="tab" data-act="tab" data-tab="caterer">Caterer</button>
+    <button class="tab" role="tab" data-act="tab" data-tab="history">History</button>
   </nav>
   <main id="view"><div class="loading">Loading the dining list…</div></main>
 </div>
@@ -254,7 +266,7 @@ var GROUP_NAME={};GROUPS.forEach(function(g){GROUP_NAME[g[0]]=g[1]});
 /* ---------- state ---------- */
 var S={members:[],board:{date:'',seats:{}},boardExists:false,loaded:false,conn:'connecting',tab:'seating',
   seatSel:null,armed:null,moveFrom:null,trayQ:'',confirmClear:false,confirmDel:null,adding:false,
-  filters:{q:'',group:'all',status:'all'},undo:null,memDirty:false};
+  filters:{q:'',group:'all',status:'all'},undo:null,memDirty:false,history:[],histSel:null,histForm:null};
 /* The board's data is one JSON file (db.json) in a private GitHub repo, read and written through GitHub's API.
    The repo name and access token are kept only in this browser. */
 var DEFAULT_REPO='mrpetu-claw/cranleigh-board-data',REPO=DEFAULT_REPO,TOKEN='',pending=0,remote=null,queue=[],flushing=false,flushTimer=null;
@@ -301,7 +313,7 @@ function cleanPatch(p){
   return o}
 function dbFind(db,id){for(var i=0;i<db.members.length;i++)if(db.members[i].id===id)return i;return -1}
 function dbUnseat(db,id){Object.keys(db.board.seats).forEach(function(k){if(db.board.seats[k]===id)delete db.board.seats[k]})}
-function applyOp(db,op){
+function applyBase(db,op){
   db.board=db.board||{date:'',seats:{}};db.board.seats=db.board.seats||{};db.members=db.members||[];
   var i;
   if(op.op==='member.add'){
@@ -324,6 +336,25 @@ function applyOp(db,op){
       var j=dbFind(db,id);if(j<0||!db.members[j].dining)return;
       dbUnseat(db,id);db.board.seats[seat]=id})}}
 
+function snapshot(db,op){
+  var v=db.board.seats||{},seatOf={};Object.keys(v).forEach(function(k){seatOf[v[k]]=k});
+  var seats={};
+  var diners=db.members.filter(function(m){return m.dining}).map(function(m){
+    var sc=seatOf[m.id]||'';if(sc)seats[sc]=m.id;
+    return {id:m.id,rank:m.rank,first:m.first,surname:m.surname,group:m.group,pdl:!!m.pdl,dessert:m.dessert||'',diet:(m.diet||[]).slice(),notes:m.notes||'',seat:sc}});
+  return {id:op.id,label:String(op.label||'').slice(0,60),date:db.board.date||'',savedAt:/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(op.at||'')?op.at:'',seats:seats,diners:diners,members:db.members.length}}
+function applyOp(db,op){
+  if(op.op==='session.save'||op.op==='session.new'||op.op==='session.delete'){
+    db.board=db.board||{date:'',seats:{}};db.board.seats=db.board.seats||{};db.members=db.members||[];db.history=db.history||[];
+    if(!/^h[a-z0-9]{3,20}$/.test(op.id||''))return;
+    if(op.op==='session.delete'){db.history=db.history.filter(function(h){return h.id!==op.id});return}
+    if(db.history.some(function(h){return h.id===op.id}))return;
+    db.history.unshift(snapshot(db,op));db.history=db.history.slice(0,200);
+    if(op.op==='session.new'){
+      db.board.seats={};
+      if(/^\d{4}-\d{2}-\d{2}$/.test(op.date||''))db.board.date=op.date}
+    return}
+  return applyBase(db,op)}
 function b64enc(str){var b=new TextEncoder().encode(str),s='';for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s)}
 function b64dec(t){var s=atob(String(t).replace(/\s/g,'')),b=new Uint8Array(s.length);for(var i=0;i<s.length;i++)b[i]=s.charCodeAt(i);return new TextDecoder().decode(b)}
 function ghHeaders(){return {'Accept':'application/vnd.github+json','Authorization':'Bearer '+TOKEN,'X-GitHub-Api-Version':'2022-11-28'}}
@@ -354,6 +385,8 @@ function ghPut(db,sha,message){
 function adoptDb(db){
   S.members=(db.members||[]).map(function(m){return fixMember(m,m.id)});
   S.board={date:(db.board&&db.board.date)||'',seats:Object.assign({},(db.board&&db.board.seats)||{})};
+  S.history=Array.isArray(db.history)?db.history:[];
+  if(S.histSel&&!S.history.some(function(h){return h.id===S.histSel}))S.histSel=null;
   S.loaded=true;S.conn='live';refresh()}
 
 /* changes are queued, then committed together as one update to db.json (retrying if someone else saved first) */
@@ -474,6 +507,10 @@ function seatHTML(id,m){
 
 function renderPlan(){
   var map=seatMap();
+  $('#plan').innerHTML=planHTML(map);
+  var seated=Object.keys(validSeats()).length,dining=S.members.filter(function(m){return m.dining}).length;
+  $('#planCount').textContent=seated+' seated · '+(dining-seated)+' to place · '+CAPACITY+' seats'}
+function planHTML(map){
   function s(id){return seatHTML(id,map[id])}
   function cell(col,row,id){return '<div class="cell" style="grid-column:'+col+';grid-row:'+row+'">'+s(id)+'</div>'}
   var h='<div class="u">';
@@ -485,9 +522,7 @@ function renderPlan(){
   h+='<div class="endL">'+s('SW')+'</div><div class="endR">'+s('JW')+'</div></div>';
   function small(name,ids){return '<div class="stable"><div class="cap">'+name+'</div>'+s(ids[0])+s(ids[1])+'<div class="t"></div>'+s(ids[2])+s(ids[3])+'</div>'}
   h+='<div class="smalls">'+small('Second table A',ST_A)+small('Second table B',ST_B)+'</div>';
-  $('#plan').innerHTML=h;
-  var seated=Object.keys(validSeats()).length,dining=S.members.filter(function(m){return m.dining}).length;
-  $('#planCount').textContent=seated+' seated · '+(dining-seated)+' to place · '+CAPACITY+' seats'}
+  return h}
 
 function chipHTML(m){
   var tags='';
@@ -652,6 +687,36 @@ function csvText(){
   dinerRows().forEach(function(r){rows.push([r.seat?seatLabel(r.seat):'',r.m.rank,r.m.first,r.m.surname,r.m.dessert,(r.m.diet||[]).join(' '),r.m.notes||''])});
   return '﻿'+rows.map(function(r){return r.map(function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'}).join(',')}).join('\r\n')}
 
+/* ---------- history ---------- */
+function histTitle(h){return (h.label?h.label+' · ':'')+(fmtDate(h.date)||'No date')}
+function renderHistory(){
+  var list=S.history,sel=null;
+  list.forEach(function(h){if(h.id===S.histSel)sel=h});
+  var today=new Date().toISOString().slice(0,10);
+  var f=S.histForm,form='';
+  if(f==='save')form='<div class="hform"><input id="hLabel" placeholder="Label (optional)" maxlength="60" aria-label="Label"><button class="btn primary small" data-act="hist-save">Save snapshot</button><button class="btn small" data-act="hist-cancel">Cancel</button></div>';
+  else if(f==='new')form='<div class="hform"><input id="hLabel" placeholder="Label for the one being saved (optional)" maxlength="60" aria-label="Label"><label class="hint">Next date <input type="date" id="hDate" value="'+today+'"></label><button class="btn primary small" data-act="hist-new">Save and start new</button><button class="btn small" data-act="hist-cancel">Cancel</button></div><p class="hint">The current seating and dining list are saved, then all seats are cleared. Members and their dining choices stay as they are.</p>';
+  var left='<div class="actions"><button class="btn primary" data-act="hist-form" data-v="save">Save snapshot</button><button class="btn" data-act="hist-form" data-v="new">Start new dinner</button></div>'+form+
+    (list.length?'<ul class="hlist" style="margin-top:14px">'+list.map(function(h){
+      var seated=Object.keys(h.seats||{}).length;
+      return '<li><button class="hitem" data-act="hist-open" data-id="'+h.id+'" aria-current="'+(h.id===S.histSel)+'"><b>'+esc(h.label||fmtDate(h.date)||'No date')+'</b><small>'+(h.label?esc(fmtDate(h.date))+' · ':'')+(h.diners||[]).length+' dining · '+seated+' seated</small></button></li>'}).join('')+'</ul>':'<div class="empty-note" style="margin-top:14px"><b>No saved sessions yet</b>Press “Save snapshot” to keep today’s seating and dining list, or “Start new dinner” to save it and begin a fresh plan.</div>');
+  var right='';
+  if(!sel)right=list.length?'<div class="empty-note"><b>Pick a session</b>Choose one on the left to see its seating plan and list.</div>':'';
+  else{
+    var map={};(sel.diners||[]).forEach(function(d){if(d.seat)map[d.seat]=d});
+    var cnt={Cheese:0,Pud:0,Fruit:0,none:0};(sel.diners||[]).forEach(function(d){if(cnt[d.dessert]!=null)cnt[d.dessert]++;else cnt.none++});
+    var ro=planHTML(map).replace(/ draggable="true"/g,'').replace(/ tabindex="0"/g,'');
+    var rows=(sel.diners||[]).slice().sort(function(a,b){return (a.surname+a.first).localeCompare(b.surname+b.first)});
+    right='<section class="card"><h2>'+esc(histTitle(sel))+' <span>'+(sel.diners||[]).length+' dining · '+Object.keys(sel.seats||{}).length+' seated</span></h2>'+
+      (sel.savedAt?'<p class="hint">Saved '+esc(new Date(sel.savedAt).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'}))+'. Read only.</p>':'<p class="hint">Read only.</p>')+
+      '<div class="plan-scroll ro"><div>'+ro+'</div></div>'+
+      '<div class="dessert-row" style="margin-top:14px">'+['Cheese','Pud','Fruit'].map(function(k){return '<div><b>'+cnt[k]+'</b><span class="dz dz-'+k+'">'+k+'</span></div>'}).join('')+(cnt.none?'<div><b>'+cnt.none+'</b><span class="dz dz-none">No choice</span></div>':'')+'</div>'+
+      '<ul class="list" style="margin-top:14px">'+rows.map(function(d){return '<li><span class="nm"><small>'+esc(d.rank)+(d.pdl?' · PDL':'')+'</small> '+esc(full(d))+'</span><span class="r">'+(d.seat?'<span class="seatbadge">'+esc(seatLabel(d.seat))+'</span>':'<span class="muted">unseated</span>')+dz(d)+'</span></li>'}).join('')+'</ul>'+
+      '<div class="actions" style="margin-top:14px">'+(f==='del:'+sel.id?'<span class="hint">Delete this saved session?</span><button class="btn small danger" data-act="hist-del-yes" data-id="'+sel.id+'">Yes, delete</button><button class="btn small" data-act="hist-cancel">Keep</button>':'<button class="btn small danger" data-act="hist-del" data-id="'+sel.id+'">Delete this session</button>')+'</div></section>'}
+  var keep=document.activeElement&&document.activeElement.id==='hLabel'?$('#hLabel').value:null;
+  $('#view').innerHTML='<div class="hist"><div>'+left+'</div><div>'+right+'</div></div>';
+  if(keep!==null&&$('#hLabel')){$('#hLabel').value=keep;$('#hLabel').focus()}}
+
 /* ---------- toast ---------- */
 var toastTimer=null;
 function toast(msg,withUndo){
@@ -667,9 +732,10 @@ function refresh(){
   if(S.tab==='seating')refreshSeating();
   else if(S.tab==='members')refreshMembers();
   else if(S.tab==='dining')renderDining();
+  else if(S.tab==='history')renderHistory();
   else renderCaterer()}
 function setTab(t){
-  S.tab=t;S.seatSel=null;S.armed=null;S.moveFrom=null;S.confirmClear=false;S.confirmDel=null;
+  S.tab=t;S.seatSel=null;S.armed=null;S.moveFrom=null;S.confirmClear=false;S.confirmDel=null;S.histForm=null;
   $('#view').innerHTML='';refresh()}
 
 /* ---------- events ---------- */
@@ -681,7 +747,7 @@ document.addEventListener('click',function(e){
   var a=e.target.closest('[data-act]');if(!a)return;
   var act=a.dataset.act,id=a.dataset.id;
   if(act==='tab')setTab(a.dataset.tab);
-  else if(act==='disconnect'){try{localStorage.removeItem('festiveBoardToken')}catch(x){}TOKEN='';remote=null;S.members=[];S.board={date:'',seats:{}};S.conn='off';refresh();openSetup('')}
+  else if(act==='disconnect'){try{localStorage.removeItem('festiveBoardToken')}catch(x){}TOKEN='';remote=null;S.members=[];S.history=[];S.histSel=null;S.board={date:'',seats:{}};S.conn='off';refresh();openSetup('')}
   else if(act==='cancel'){S.seatSel=null;S.armed=null;S.moveFrom=null;refresh()}
   else if(act==='unseat'&&S.seatSel)unseat(S.seatSel);
   else if(act==='move'&&S.seatSel){S.moveFrom=S.seatSel;S.seatSel=null;refresh()}
@@ -694,6 +760,20 @@ document.addEventListener('click',function(e){
     var patch=v==='dine'?{attending:true,dining:true}:v==='meet'?{attending:true,dining:false}:{attending:false,dining:false};
     if(!patch.dining){var seat=seatOfMember(id);if(seat){var nx=Object.assign({},validSeats());delete nx[seat];m.dining=false;m.attending=patch.attending;saveMember(id,patch);applySeats(nx,full(m)+' is not dining, so seat '+seatLabel(seat)+' is free again');return}}
     saveMember(id,patch)}
+  else if(act==='hist-open'){S.histSel=id;S.histForm=null;renderHistory()}
+  else if(act==='hist-form'){S.histForm=a.dataset.v;renderHistory()}
+  else if(act==='hist-cancel'){S.histForm=null;renderHistory()}
+  else if(act==='hist-save'||act==='hist-new'){
+    var lab=($('#hLabel')||{}).value||'',nid='h'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    var snap=snapshot({board:{date:S.board.date,seats:validSeats()},members:S.members},{id:nid,label:lab,at:new Date().toISOString().replace(/\.\d+Z$/,'.000Z')});
+    var op={op:act==='hist-new'?'session.new':'session.save',id:nid,label:lab,at:snap.savedAt};
+    S.history=[snap].concat(S.history);S.histSel=nid;S.histForm=null;
+    if(act==='hist-new'){var nd=($('#hDate')||{}).value||'';op.date=nd;S.board.seats={};if(/^\d{4}-\d{2}-\d{2}$/.test(nd))S.board.date=nd}
+    api(op);refresh();toast(act==='hist-new'?'Saved to history. New dinner started with empty seats.':'Saved to history')}
+  else if(act==='hist-del'){S.histForm='del:'+id;renderHistory()}
+  else if(act==='hist-del-yes'){
+    S.history=S.history.filter(function(h){return h.id!==id});if(S.histSel===id)S.histSel=null;S.histForm=null;
+    api({op:'session.delete',id:id});renderHistory()}
   else if(act==='add-toggle'){S.adding=!S.adding;renderAddForm()}
   else if(act==='del'){S.confirmDel=id;refreshMembers()}
   else if(act==='del-no'){S.confirmDel=null;refreshMembers()}
